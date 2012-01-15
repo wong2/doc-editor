@@ -1,59 +1,70 @@
 #-*-coding:utf-8-*-
-from flask import Flask, request, render_template, g, abort
-import sqlite3, json
-
-DATABASE = "db.sqlite"
+from flask import Flask, request, Response, render_template, g, abort
+from flaskext.sqlalchemy import SQLAlchemy
+import json
 
 app = Flask(__name__)
-app.config.from_object(__name__)
 
-def connect_db():
-    return sqlite3.connect(app.config["DATABASE"])
+####################SQLAlchemy########################
 
-def query_db(query, args=(), one=False):
-    cur = g.db.execute(query, args)
-    rv = [dict((cur.description[idx][0], value)
-               for idx, value in enumerate(row)) for row in cur.fetchall()]
-    return (rv[0] if rv else None) if one else rv
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///db.sqlite'
 
-@app.before_request
-def before_request():
-    g.db = connect_db()
+db = SQLAlchemy(app)
 
-@app.teardown_request
-def teardown_request(exception):
-    g.db.close()
+class Document(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    title = db.Column(db.String(80))
+    content = db.Column(db.Text)
+
+    def __init__(self, title, content):
+        self.title = title 
+        self.content = content 
+
+    def __repr__(self):
+        return '<Document %r>' % self.title
+
+    def to_dict(self):
+        return {"id": self.id, "title": self.title, "content": self.content}
+
+#######################################################
+
+# jsonify response decorator
+def jsonify(f):
+    def wrapped(*args, **kwargs):
+        return Response(json.dumps(f(*args, **kwargs)), mimetype='application/json')
+    return wrapped
+
 
 @app.route("/")
 def index():
     return render_template("index.html")
 
-@app.route("/documents", methods=["GET", "POST"])
-def documents():
-    if request.method == "GET":
-        return json.dumps(query_db("select id, title from documents"))
-    elif request.method == "POST":
-        cursor = g.db.cursor()
-        cursor.execute("insert into documents (title, content) values (?, ?)", [request.json["title"], request.json["content"]])
-        g.db.commit()
-        row = g.db.execute("select * from documents where id=?", (cursor.lastrowid,)).fetchone()
-        return json.dumps(dict(id=row[0], title=row[1], content=row[2]))
-        
+@app.route('/documents', methods=["GET", "POST"], defaults={"document_id": None})
 @app.route("/documents/<int:document_id>", methods=["GET", "PUT", "DELETE"])
-def handleDocumentById(document_id):
-    if request.method == "GET":
-        return json.dumps(query_db("select * from documents where id=?", (document_id,), one=True))
-    elif request.method == "PUT":
-        new_title, new_content = request.json["title"], request.json["content"]
-        g.db.execute("update documents set title=?, content=? where id=?", (new_title, new_content, document_id))
-        g.db.commit()
-        return json.dumps(request.json)
-    elif request.method == "DELETE":
-        result = query_db("select * from documents where id=?", (document_id,), one=True)
-        g.db.execute("delete from documents where id=?", (document_id,))
-        g.db.commit()
-        return json.dumps(result)
-
+@jsonify
+def document(document_id):
+    if not document_id:
+        if request.method == "GET":
+            return [{"id": d.id, "title": d.title} for d in Document.query.all()]
+        elif request.method == "POST":
+            doc = Document(request.json["title"], request.json["content"])
+            db.session.add(doc)
+            db.session.commit()
+            return doc.to_dict()
+    else:
+        doc = Document.query.filter_by(id=document_id).first()
+        if request.method == "GET":
+            return doc.to_dict()
+        elif request.method == "PUT":
+            doc.title = request.json["title"]
+            doc.content = request.json["content"]
+            db.session.commit()
+            return doc.to_dict()
+        elif request.method == "DELETE":
+            result = doc.to_dict()
+            db.session.delete(doc)
+            db.session.commit()
+            return result
 
 if __name__ == "__main__":
     app.run(debug=True)
