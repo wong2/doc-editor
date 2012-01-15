@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>Document Editor</title>
+    <meta name="description" content="">
+    <meta name="author" content="">
+
+    <!-- Le HTML5 shim, for IE6-8 support of HTML elements -->
+    <!--[if lt IE 9]>
+      <script src="http://html5shim.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+
+    <link href="static/bootstrap.min.css" rel="stylesheet">
+    <style type="text/css">
+      body {
+        padding-top: 60px;
+      }
+      .title-input{
+          margin-bottom: 20px;
+      }
+      form .input {
+          margin-left: 10px;
+      }
+      .submit-button{
+          margin: 20px 0 0 10px;
+      }
+      .delete-button{
+          float: right;
+          cursor: pointer;
+      }
+    </style>
+  </head>
+
+  <body>
+      <div class="topbar">
+          <div class="topbar-inner">
+              <div class="container-fluid">
+                  <a class="brand" href="#">Document Editor</a>
+                  <ul class="nav">
+                      <li class="active"><a href="#">Home</a></li>
+                  </ul>
+              </div>
+          </div>
+      </div>
+      <div class="container-fluid">
+          <div class="sidebar" >
+              <div class="well" style="height:500px">
+                  <h5>Documents</h5>
+                  <ul id="doc-list"></ul>
+                  <a href="#/add" class="add-button">Add a document</a>
+              </div>
+          </div>
+          <div class="content">
+              <div class="well" style="height: 380px">
+                  <form action="" id="editor">
+                      <div class="title-input input">
+                          <input class="span12" id="titleInput" name="titleInput" size="30" type="text" placeholder="title" >
+                      </div>
+                      <div class="input">
+                          <textarea class="span12" id="contentInput" name="contentInput" rows="15" placeholder="content"></textarea>
+                      </div>
+                      <input type="button" class="btn primary submit-button" value="Save" />
+                  </form>
+              </div>
+          </div>
+    </div>
+
+    <script type="text/template" id="doc-title-templ">
+        <a class="doc-title" href="#/edit/<%= id %>"><%= title %></a>
+        <a class="delete-button">x</a>
+    </script>
+
+    <script type="text/javascript" src="static/json2.js"></script>
+    <script type="text/javascript" src="static/underscore.min.js"></script>
+    <script type="text/javascript" src="static/jquery.min.js"></script>
+    <script type="text/javascript" src="static/backbone.min.js"></script>
+
+    <script type="text/javascript" src="static/models.js"></script>
+    <script type="text/javascript" src="static/views.js"></script>
+    <script type="text/javascript" src="static/router.js"></script>
+    <script type="text/javascript" src="static/app.js"></script>
+
+  </body>
+</html>
